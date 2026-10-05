@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Bitter, Roboto } from "next/font/google";
 import { SmoothScroll } from "@/components/providers/smooth-scroll";
 import { site } from "@/content/site";
+import { getSiteUrl } from "@/lib/site-url";
 import "./globals.css";
 
 // Фирменные шрифты (п. 1.9 гайда): Roboto — для текста, Bitter — для заголовков и важных сообщений.
@@ -22,6 +23,8 @@ const bitter = Bitter({
 });
 
 export const metadata: Metadata = {
+  metadataBase: getSiteUrl(),
+  alternates: { canonical: "/" },
   title: { default: site.meta.title, template: `%s · ${site.meta.shortTitle}` },
   description: site.meta.description,
   keywords: [...site.meta.keywords],
