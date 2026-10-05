@@ -27,7 +27,7 @@ export function Logo({
   variant = "color",
   showTagline = true,
   className,
-  title = "BEBRAND — Right to be brand",
+  title = "BEBRAND",
 }: LogoProps) {
   const colors = PALETTE[variant];
   return (

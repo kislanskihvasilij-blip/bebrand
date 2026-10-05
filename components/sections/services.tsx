@@ -12,7 +12,7 @@ export function Services() {
       id="services"
       aria-labelledby="services-title"
       data-header-theme="light"
-      className="scroll-mt-20 bg-white pb-(--section-space)"
+      className="bg-white pb-(--section-space)"
     >
       <div className="container-brand">
         <div className="border-t border-ink/15 pt-[calc(var(--section-space)*0.7)]">
@@ -61,7 +61,7 @@ export function Facts() {
             </li>
           ))}
         </ul>
-        <p className="mt-6 text-sm text-white/70">{facts.note}</p>
+        <p className="mt-6 text-sm text-white/90">{facts.note}</p>
       </div>
     </section>
   );

@@ -8,22 +8,57 @@ import { Facts, Services } from "@/components/sections/services";
 import { SiteHeader } from "@/components/sections/site-header";
 import { Benefits, Manifesto, SloganBand } from "@/components/sections/why-brand";
 import { site } from "@/content/site";
+import { getSiteUrl } from "@/lib/site-url";
 
-// Структурированные данные для поиска по региону (Яндекс / Google): услуга, город, зона обслуживания
+const siteUrl = getSiteUrl();
+const absoluteUrl = (path: string) => new URL(path, siteUrl).href;
+// Профили для sameAs — без MAX: его ссылка содержит одноразовый токен, а не постоянный профиль
+const profileLinks = site.contact.channels.filter((channel) => channel.id !== "max").map((channel) => channel.href);
+
+// Структурированные данные для поиска по региону (Яндекс / Google): услуга, город, зона обслуживания.
+// Федеральная горячая линия — в contactPoint, чтобы не выдавать её за местный номер.
 const structuredData = {
   "@context": "https://schema.org",
-  "@type": "ProfessionalService",
-  name: `${site.person.name} — ${site.person.role}`,
-  description: site.meta.description,
-  areaServed: [
-    { "@type": "City", name: "Краснодар" },
-    { "@type": "AdministrativeArea", name: "Южный федеральный округ" },
+  "@graph": [
+    {
+      "@type": "ProfessionalService",
+      "@id": absoluteUrl("/#business"),
+      name: `${site.person.name} — ${site.person.role}`,
+      description: site.meta.description,
+      url: siteUrl.href,
+      image: absoluteUrl("/opengraph-image.jpg"),
+      brand: { "@type": "Brand", name: "BEBRAND" },
+      address: {
+        "@type": "PostalAddress",
+        addressLocality: "Краснодар",
+        addressRegion: "Краснодарский край",
+        addressCountry: "RU",
+      },
+      areaServed: [
+        { "@type": "AdministrativeArea", name: "Южный федеральный округ" },
+        ...site.regions.map((city) => ({ "@type": "City", name: city })),
+      ],
+      contactPoint: {
+        "@type": "ContactPoint",
+        telephone: "+7-800-250-88-61",
+        contactType: "customer service",
+        contactOption: "TollFree",
+        areaServed: "RU",
+        availableLanguage: "ru",
+      },
+      sameAs: profileLinks,
+    },
+    {
+      "@type": "Person",
+      "@id": absoluteUrl("/#person"),
+      name: site.person.name,
+      jobTitle: site.person.role,
+      image: absoluteUrl(site.about.photo),
+      worksFor: { "@id": absoluteUrl("/#business") },
+      memberOf: { "@type": "Organization", name: "BEBRAND", url: "https://biz-brand.ru/" },
+      sameAs: profileLinks,
+    },
   ],
-  address: { "@type": "PostalAddress", addressLocality: "Краснодар", addressCountry: "RU" },
-  telephone: "+7-800-250-88-61",
-  sameAs: site.contact.channels.map((channel) => channel.href),
-  parentOrganization: { "@type": "Organization", name: "BEBRAND", url: "https://biz-brand.ru/" },
-  employee: { "@type": "Person", name: site.person.name, jobTitle: site.person.role },
 };
 
 export default function Home() {

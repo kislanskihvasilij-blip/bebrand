@@ -30,8 +30,14 @@ export const metadata: Metadata = {
   keywords: [...site.meta.keywords],
   authors: [{ name: site.person.name }],
   creator: site.person.name,
+  // Коды подтверждения из Яндекс.Вебмастера и Google Search Console — через переменные окружения
+  verification: {
+    yandex: process.env.NEXT_PUBLIC_YANDEX_VERIFICATION,
+    google: process.env.NEXT_PUBLIC_GOOGLE_VERIFICATION,
+  },
   openGraph: {
     type: "website",
+    url: "/",
     locale: "ru_RU",
     title: site.meta.title,
     description: site.meta.description,

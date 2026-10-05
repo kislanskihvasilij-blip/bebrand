@@ -1,12 +1,10 @@
-"use client";
-
 import { ArrowUpRight } from "lucide-react";
 import { Logo } from "@/components/brand/logo";
 import { SectionLabel } from "@/components/brand/marks";
 import { Reveal } from "@/components/motion/scroll-effects";
-import { useAnchorNavigation } from "@/components/providers/smooth-scroll";
 import { site } from "@/content/site";
 import { cn } from "@/lib/utils";
+import { FooterNav } from "./footer-nav";
 
 const NEW_TAB_HINT = "(откроется в новой вкладке)";
 
@@ -18,7 +16,7 @@ export function Contact() {
       id="contact"
       aria-labelledby="contact-title"
       data-header-theme="dark"
-      className="relative scroll-mt-20 overflow-hidden bg-pattern-red pb-(--section-space) pt-[calc(var(--section-space)+7vw)] text-white clip-chevron-top"
+      className="relative overflow-hidden bg-pattern-red pb-(--section-space) pt-[calc(var(--section-space)+7vw)] text-white clip-chevron-top"
     >
       <div className="container-brand relative grid gap-14 lg:grid-cols-12 lg:gap-10">
         <Reveal className="lg:col-span-7">
@@ -29,7 +27,7 @@ export function Contact() {
             {contact.title}
           </h2>
           <p className="mt-8 max-w-xl text-lg leading-relaxed text-white/85">{contact.text}</p>
-          <p className="mt-6 max-w-xl text-sm leading-relaxed text-white/70">{contact.area}</p>
+          <p className="mt-6 max-w-xl text-sm leading-relaxed text-white/90">{contact.area}</p>
         </Reveal>
 
         <Reveal delay={0.1} className="lg:col-span-5">
@@ -48,7 +46,7 @@ export function Contact() {
                   )}
                 >
                   <span>
-                    <span className="block text-xs font-semibold uppercase tracking-[0.18em] opacity-75">{channel.label}</span>
+                    <span className="block text-xs font-semibold uppercase tracking-[0.18em] opacity-90">{channel.label}</span>
                     <span className="mt-1 block font-heading text-2xl font-bold">{channel.value}</span>
                   </span>
                   <ArrowUpRight
@@ -62,7 +60,7 @@ export function Contact() {
           </ul>
 
           <div className="mt-10 border-t border-white/25 pt-8">
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-white/70">{contact.hotline.label}</p>
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-white/90">{contact.hotline.label}</p>
             <a
               href={contact.hotline.href}
               className="mt-3 block whitespace-nowrap font-condensed text-4xl font-bold leading-none tracking-tight sm:text-5xl xl:text-6xl"
@@ -88,7 +86,6 @@ export function Contact() {
 /** Год считает серверный page.tsx: клиентский new Date() в рендере расходится с пререндером при смене года */
 export function SiteFooter({ year }: { year: number }) {
   const { footer, contact, nav, person } = site;
-  const handleAnchorClick = useAnchorNavigation();
   const telegram = contact.channels[0];
 
   return (
@@ -100,17 +97,7 @@ export function SiteFooter({ year }: { year: number }) {
           <p className="mt-2 max-w-sm text-sm leading-relaxed text-white/50">{footer.headOffice}</p>
         </div>
 
-        <nav aria-label="Навигация в подвале" className="md:col-span-3">
-          <ul className="space-y-3 text-sm">
-            {nav.map((item) => (
-              <li key={item.href}>
-                <a href={item.href} onClick={handleAnchorClick} className="link-underline transition-colors hover:text-white">
-                  {item.label}
-                </a>
-              </li>
-            ))}
-          </ul>
-        </nav>
+        <FooterNav items={nav} />
 
         <div className="space-y-3 text-sm md:col-span-4">
           <p className="font-heading text-lg font-bold italic text-white">{person.name}</p>

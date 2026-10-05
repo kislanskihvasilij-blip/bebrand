@@ -1,10 +1,11 @@
 "use client";
 
-import { useRef, type ReactNode } from "react";
+import { Fragment, useRef, type ReactNode } from "react";
 import Image from "next/image";
 import { motion, useScroll, useTransform, type MotionValue } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { DURATION, EASE, staggerWindow } from "@/lib/motion";
+import { usePrefersReducedMotion } from "@/lib/use-prefers-reduced-motion";
 
 /* ───────── Появление блока при входе в экран ───────── */
 
@@ -43,15 +44,30 @@ const normalizeWord = (word: string) => word.toLowerCase().replace(/[.,!?;:«»"
 export function ScrollHighlightText({
   text,
   className,
-  from = "#cfcfcf",
+  // #8a8a8a — 3.45:1 на белом: «непрочитанный» крупный текст остаётся читаемым (WCAG 1.4.3)
+  from = "#8a8a8a",
   to = "#1b1b1a",
   accent = [],
   accentColor = "#ae1613",
 }: ScrollHighlightTextProps) {
   const ref = useRef<HTMLParagraphElement>(null);
+  const prefersReducedMotion = usePrefersReducedMotion();
   const { scrollYProgress } = useScroll({ target: ref, offset: ["start 0.8", "end 0.5"] });
   const words = text.split(" ");
   const accentWords = new Set(accent.map(normalizeWord));
+  const finalColor = (word: string) => (accentWords.has(normalizeWord(word)) ? accentColor : to);
+
+  if (prefersReducedMotion) {
+    return (
+      <p ref={ref} className={className}>
+        {words.map((word, index) => (
+          <Fragment key={index}>
+            <span style={{ color: finalColor(word) }}>{word}</span>{" "}
+          </Fragment>
+        ))}
+      </p>
+    );
+  }
 
   return (
     <p ref={ref} className={className}>
@@ -61,7 +77,7 @@ export function ScrollHighlightText({
           progress={scrollYProgress}
           range={staggerWindow(index, words.length)}
           from={from}
-          to={accentWords.has(normalizeWord(word)) ? accentColor : to}
+          to={finalColor(word)}
         >
           {word}
         </HighlightWord>
@@ -93,20 +109,30 @@ type OpposingWordsProps = { top: string; bottom: string; className?: string };
 
 export function OpposingWords({ top, bottom, className }: OpposingWordsProps) {
   const ref = useRef<HTMLDivElement>(null);
+  const prefersReducedMotion = usePrefersReducedMotion();
   const { scrollYProgress } = useScroll({ target: ref, offset: ["start 0.9", "end start"] });
   // Центр слова проходит от правого края экрана к левому (и наоборот) — как ScrollTrigger на auros
   const xTop = useTransform(scrollYProgress, (value) => `calc(${(1 - value) * 100}vw - 50%)`);
   const xBottom = useTransform(scrollYProgress, (value) => `calc(${value * 100}vw - 50%)`);
-  const wordClass =
-    "w-max whitespace-nowrap font-heading text-[clamp(4.5rem,16vw,20rem)] font-extrabold italic leading-[0.92] tracking-tight will-change-transform";
+  // Без движения слова стоят по краям и мельче — чтобы целиком помещались в экран
+  const wordClass = cn(
+    "w-max whitespace-nowrap font-heading font-extrabold italic leading-[0.92] tracking-tight",
+    prefersReducedMotion ? "text-[clamp(3rem,10vw,12rem)]" : "text-[clamp(4.5rem,16vw,20rem)] will-change-transform",
+  );
 
   return (
     <div ref={ref} aria-hidden="true" className={cn("relative select-none overflow-hidden py-[2vw]", className)}>
-      <motion.div style={{ x: xTop }} className={cn(wordClass, "bg-grad-red bg-clip-text pr-[0.1em] text-transparent")}>
+      <motion.div
+        style={prefersReducedMotion ? undefined : { x: xTop }}
+        className={cn(wordClass, "bg-grad-red bg-clip-text pr-[0.1em] text-transparent", prefersReducedMotion && "pl-(--gutter)")}
+      >
         {top}
       </motion.div>
       {/* Контур (text-stroke) на вариативном Bitter показывает перекрытия контуров — берём градиент 5→4 */}
-      <motion.div style={{ x: xBottom }} className={cn(wordClass, "bg-grad-steel bg-clip-text pr-[0.1em] text-transparent")}>
+      <motion.div
+        style={prefersReducedMotion ? undefined : { x: xBottom }}
+        className={cn(wordClass, "bg-grad-steel bg-clip-text pr-[0.1em] text-transparent", prefersReducedMotion && "ml-auto pr-(--gutter)")}
+      >
         {bottom}
       </motion.div>
     </div>
@@ -117,10 +143,14 @@ export function OpposingWords({ top, bottom, className }: OpposingWordsProps) {
 
 export function ScrollProgressLine({ className }: { className?: string }) {
   const ref = useRef<HTMLDivElement>(null);
+  const prefersReducedMotion = usePrefersReducedMotion();
   const { scrollYProgress } = useScroll({ target: ref, offset: ["start 0.7", "end 0.6"] });
   return (
     <div ref={ref} aria-hidden="true" className={cn("absolute w-px bg-ink/15", className)}>
-      <motion.div style={{ scaleY: scrollYProgress }} className="h-full w-full origin-top bg-brand-red" />
+      <motion.div
+        style={{ scaleY: prefersReducedMotion ? 1 : scrollYProgress }}
+        className="h-full w-full origin-top bg-brand-red"
+      />
     </div>
   );
 }
@@ -137,6 +167,7 @@ type ParallaxImageProps = {
 
 export function ParallaxImage({ src, alt, sizes, className, imageClassName }: ParallaxImageProps) {
   const ref = useRef<HTMLDivElement>(null);
+  const prefersReducedMotion = usePrefersReducedMotion();
   const { scrollYProgress } = useScroll({ target: ref, offset: ["start end", "end start"] });
   const y = useTransform(scrollYProgress, [0, 1], ["-7%", "7%"]);
 
@@ -147,9 +178,9 @@ export function ParallaxImage({ src, alt, sizes, className, imageClassName }: Pa
       initial={{ clipPath: "inset(100% 0% 0% 0%)" }}
       whileInView={{ clipPath: "inset(0% 0% 0% 0%)" }}
       viewport={{ once: true, margin: "0px 0px -10% 0px" }}
-      transition={{ duration: 1.2, ease: EASE.signature }}
+      transition={{ duration: prefersReducedMotion ? 0 : 1.2, ease: EASE.signature }}
     >
-      <motion.div style={{ y }} className="absolute inset-x-0 -inset-y-[9%]">
+      <motion.div style={prefersReducedMotion ? undefined : { y }} className="absolute inset-x-0 -inset-y-[9%]">
         <Image src={src} alt={alt} fill sizes={sizes} className={cn("object-cover", imageClassName)} />
       </motion.div>
     </motion.div>

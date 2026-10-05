@@ -10,13 +10,12 @@ export function Manifesto() {
       id="why"
       aria-labelledby="manifesto-title"
       data-header-theme="light"
-      className="scroll-mt-20 bg-white pb-(--section-space) pt-[calc(var(--section-space)*0.6)]"
+      className="bg-white pb-(--section-space) pt-[calc(var(--section-space)*0.6)]"
     >
       <div className="container-brand">
-        <SectionLabel index="02">{manifesto.label}</SectionLabel>
-        <h2 id="manifesto-title" className="sr-only">
+        <SectionLabel index="02" as="h2" id="manifesto-title">
           {manifesto.label}
-        </h2>
+        </SectionLabel>
         <ScrollHighlightText
           text={manifesto.text}
           accent={manifesto.accent}
@@ -59,7 +58,10 @@ export function Benefits() {
                 />
                 <Reveal delay={0.06 * (index % 3)} className="relative flex h-full flex-col p-8 md:p-10">
                   <div className="flex items-center justify-between">
-                    <span className="font-condensed text-sm font-semibold tabular-nums text-brand-red transition-colors duration-200 group-hover:text-white/80">
+                    <span
+                      aria-hidden="true"
+                      className="font-condensed text-sm font-semibold tabular-nums text-brand-red transition-colors duration-200 group-hover:text-white/80"
+                    >
                       {String(index + 1).padStart(2, "0")}
                     </span>
                     <Icon aria-hidden="true" className="size-7 text-brand-graphite transition-colors duration-200 group-hover:text-white" />

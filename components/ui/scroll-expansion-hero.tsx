@@ -9,8 +9,9 @@ import {
   type ReactNode,
 } from "react";
 import Image from "next/image";
-import { motion, useReducedMotion } from "framer-motion";
+import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
+import { usePrefersReducedMotion } from "@/lib/use-prefers-reduced-motion";
 
 /** Глобальное событие: раскрыть hero сразу (навигация по якорям, skip-link) */
 export const HERO_EXPAND_EVENT = "scroll-expand-media:expand";
@@ -21,6 +22,8 @@ interface ScrollExpandMediaProps {
   posterSrc?: string;
   bgImageSrc: string;
   title?: string;
+  /** Невидимое начало H1 для поисковиков и скринридеров — должно повторять видимый текст рядом */
+  srTitle?: string;
   date?: string;
   scrollToExpand?: string;
   textBlend?: boolean;
@@ -52,9 +55,14 @@ const CONTENT_HIDE_THRESHOLD = 0.75;
 const OVERLAY_START = 0.7;
 const TOP_TOLERANCE_PX = 5;
 const LINE_HEIGHT_PX = 16;
+const WHEEL_GESTURE_GAP_MS = 150; // пауза, после которой колесо считается новым жестом, а не инерцией
 const MOBILE_QUERY = "(max-width: 767px)";
 
 const clamp01 = (value: number) => Math.min(Math.max(value, 0), 1);
+
+/** Внутри прокручиваемых оверлеев (мобильное меню) колесо и тач принадлежат им, а не hero */
+const isInsideScrollableOverlay = (target: EventTarget | null) =>
+  target instanceof Element && target.closest("[data-lenis-prevent]") !== null;
 
 function heroReducer(state: HeroState, action: HeroAction): HeroState {
   switch (action.type) {
@@ -102,6 +110,7 @@ const ScrollExpandMedia = ({
   posterSrc,
   bgImageSrc,
   title,
+  srTitle,
   date,
   scrollToExpand,
   textBlend,
@@ -114,7 +123,7 @@ const ScrollExpandMedia = ({
 }: ScrollExpandMediaProps) => {
   const [state, dispatch] = useReducer(heroReducer, INITIAL_STATE);
   const [trackedMediaType, setTrackedMediaType] = useState(mediaType);
-  const prefersReducedMotion = useReducedMotion();
+  const prefersReducedMotion = usePrefersReducedMotion();
   const isMobileState = useSyncExternalStore(
     subscribeToMobileQuery,
     () => window.matchMedia(MOBILE_QUERY).matches,
@@ -123,6 +132,7 @@ const ScrollExpandMedia = ({
 
   const sectionRef = useRef<HTMLDivElement | null>(null);
   const stateRef = useRef(state);
+  const reducedMotionRef = useRef(prefersReducedMotion);
   const touchStartYRef = useRef(0);
 
   // Смена типа медиа сбрасывает прогресс (как в оригинале) — без лишнего эффекта
@@ -133,6 +143,7 @@ const ScrollExpandMedia = ({
 
   useEffect(() => {
     stateRef.current = state;
+    reducedMotionRef.current = prefersReducedMotion;
   });
 
   useEffect(() => {
@@ -143,17 +154,28 @@ const ScrollExpandMedia = ({
   // пришёл по якорю или браузер восстановил позицию прокрутки
   useEffect(() => {
     const shouldStartExpanded =
-      prefersReducedMotion === true || window.location.hash !== "" || window.scrollY > TOP_TOLERANCE_PX;
+      prefersReducedMotion || window.location.hash !== "" || window.scrollY > TOP_TOLERANCE_PX;
     if (!shouldStartExpanded) return;
+    // stateRef — сразу: иначе восстановление прокрутки в этом кадре сбросит страницу наверх
+    stateRef.current = { ...stateRef.current, isExpanded: true };
     const frame = requestAnimationFrame(() => dispatch({ type: "expand" }));
     return () => cancelAnimationFrame(frame);
   }, [prefersReducedMotion]);
 
   useEffect(() => {
+    // Сворачиваться обратно можно только у верха страницы и если пользователь не просит меньше движения
+    const canCollapse = () => !reducedMotionRef.current && window.scrollY <= TOP_TOLERANCE_PX;
+    let lastWheelTime = 0;
+
     const handleWheel = (e: WheelEvent) => {
+      // Ctrl+колесо — масштаб страницы, его оставляем браузеру
+      if (e.ctrlKey || isInsideScrollableOverlay(e.target)) return;
+      const isNewGesture = e.timeStamp - lastWheelTime > WHEEL_GESTURE_GAP_MS;
+      lastWheelTime = e.timeStamp;
       const { isExpanded } = stateRef.current;
       const deltaY = normalizeWheelDelta(e);
-      if (isExpanded && deltaY < 0 && window.scrollY <= TOP_TOLERANCE_PX) {
+      // Хвост инерции трекпада после плавной прокрутки наверх не должен сворачивать блок
+      if (isExpanded && deltaY < 0 && isNewGesture && canCollapse()) {
         dispatch({ type: "collapse" });
         e.preventDefault();
       } else if (!isExpanded) {
@@ -163,19 +185,22 @@ const ScrollExpandMedia = ({
     };
 
     const handleTouchStart = (e: TouchEvent) => {
-      touchStartYRef.current = e.touches[0]?.clientY ?? 0;
+      touchStartYRef.current = e.touches.length === 1 ? (e.touches[0]?.clientY ?? 0) : 0;
     };
 
     const handleTouchMove = (e: TouchEvent) => {
+      // Два пальца — это масштабирование страницы, его не блокируем
+      if (e.touches.length > 1 || isInsideScrollableOverlay(e.target)) return;
       const startY = touchStartYRef.current;
       if (!startY) return;
       const touchY = e.touches[0]?.clientY ?? startY;
       const deltaY = startY - touchY;
       const { isExpanded } = stateRef.current;
 
-      if (isExpanded && deltaY < -TOUCH_COLLAPSE_THRESHOLD_PX && window.scrollY <= TOP_TOLERANCE_PX) {
+      if (isExpanded && deltaY < -TOUCH_COLLAPSE_THRESHOLD_PX && canCollapse()) {
         dispatch({ type: "collapse" });
         e.preventDefault();
+        touchStartYRef.current = touchY;
       } else if (!isExpanded) {
         e.preventDefault();
         const factor = deltaY < 0 ? TOUCH_SENSITIVITY_BACK : TOUCH_SENSITIVITY_FORWARD;
@@ -194,7 +219,7 @@ const ScrollExpandMedia = ({
 
     // В оригинале клавиатура не раскрывала блок — пользователь без мыши застревал наверху
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.defaultPrevented || e.altKey || e.ctrlKey || e.metaKey) return;
+      if (e.defaultPrevented || e.altKey || e.ctrlKey || e.metaKey || isInsideScrollableOverlay(e.target)) return;
       const isSpace = e.key === " ";
       if (isSpace && isInteractiveTarget(e.target)) return;
       const isForward = ["ArrowDown", "PageDown", "End"].includes(e.key) || (isSpace && !e.shiftKey);
@@ -205,11 +230,23 @@ const ScrollExpandMedia = ({
         e.preventDefault();
         const step = e.key === "End" ? 1 : KEY_STEP;
         dispatch({ type: "advance", delta: isForward ? step : -step });
-      } else if (isExpanded && isBackward && window.scrollY <= TOP_TOLERANCE_PX) {
+      } else if (isExpanded && isBackward && canCollapse()) {
         e.preventDefault();
         dispatch({ type: "collapse" });
         dispatch({ type: "advance", delta: -KEY_STEP });
       }
+    };
+
+    // Tab увёл фокус за пределы блока, пока он свёрнут, — раскрываем, иначе handleScroll вернёт страницу
+    // наверх и фокус станет невидимым. Позицию элемента не проверяем: браузер прокручивает к нему
+    // ещё до focusin. Фиксированные шапка и меню прокрутку не вызывают — их пропускаем.
+    // stateRef меняем сразу: событие scroll придёт раньше нового рендера.
+    const handleFocusIn = (e: FocusEvent) => {
+      if (stateRef.current.isExpanded || !(e.target instanceof HTMLElement)) return;
+      if (sectionRef.current?.contains(e.target)) return;
+      if (e.target.closest("header, [data-lenis-prevent]")) return;
+      stateRef.current = { ...stateRef.current, isExpanded: true };
+      dispatch({ type: "expand" });
     };
 
     const handleExpandRequest = () => dispatch({ type: "expand" });
@@ -217,10 +254,11 @@ const ScrollExpandMedia = ({
     const nonPassive: AddEventListenerOptions = { passive: false };
     window.addEventListener("wheel", handleWheel, nonPassive);
     window.addEventListener("scroll", handleScroll);
-    window.addEventListener("touchstart", handleTouchStart, nonPassive);
+    window.addEventListener("touchstart", handleTouchStart, { passive: true });
     window.addEventListener("touchmove", handleTouchMove, nonPassive);
     window.addEventListener("touchend", handleTouchEnd);
     window.addEventListener("keydown", handleKeyDown);
+    window.addEventListener("focusin", handleFocusIn);
     window.addEventListener("hashchange", handleExpandRequest);
     window.addEventListener(HERO_EXPAND_EVENT, handleExpandRequest);
 
@@ -231,6 +269,7 @@ const ScrollExpandMedia = ({
       window.removeEventListener("touchmove", handleTouchMove);
       window.removeEventListener("touchend", handleTouchEnd);
       window.removeEventListener("keydown", handleKeyDown);
+      window.removeEventListener("focusin", handleFocusIn);
       window.removeEventListener("hashchange", handleExpandRequest);
       window.removeEventListener(HERO_EXPAND_EVENT, handleExpandRequest);
     };
@@ -252,9 +291,10 @@ const ScrollExpandMedia = ({
     >
       <section className="relative flex flex-col items-center justify-start min-h-[100dvh]">
         <div className="relative w-full flex flex-col items-center min-h-[100dvh]">
+          {/* initial={false}: фон виден уже в SSR-HTML, не дожидаясь гидрации, — быстрее LCP */}
           <motion.div
             className="absolute inset-0 z-0 h-full"
-            initial={{ opacity: 0 }}
+            initial={false}
             animate={{ opacity: 1 - scrollProgress }}
             transition={{ duration: 0.1 }}
           >
@@ -263,6 +303,7 @@ const ScrollExpandMedia = ({
               alt=""
               width={1920}
               height={1080}
+              sizes="100vw"
               className="w-screen h-screen"
               style={{ objectFit: "cover", objectPosition: "center" }}
               preload
@@ -378,13 +419,19 @@ const ScrollExpandMedia = ({
                       {date}
                     </p>
                   )}
+                  {/* Подсказка — ещё и кнопка: раскрыть блок можно кликом или Enter, без прокрутки */}
                   {scrollToExpand && (
-                    <p
-                      className="mt-1 text-xs md:text-sm font-medium uppercase tracking-[0.2em] text-brand-mist/90 text-center"
+                    <button
+                      type="button"
+                      onClick={() => dispatch({ type: "expand" })}
+                      tabIndex={state.isExpanded ? -1 : undefined}
+                      aria-hidden={state.isExpanded || undefined}
+                      aria-label={`${scrollToExpand}. Нажмите, чтобы раскрыть`}
+                      className="mt-1 cursor-pointer text-xs md:text-sm font-medium uppercase tracking-[0.2em] text-brand-mist/90 text-center transition-colors hover:text-white"
                       style={{ transform: `translateX(${textTranslateX}vw)` }}
                     >
                       {scrollToExpand}
-                    </p>
+                    </button>
                   )}
                 </div>
               </div>
@@ -394,12 +441,14 @@ const ScrollExpandMedia = ({
                   textBlend ? "mix-blend-difference" : "mix-blend-normal"
                 }`}
               >
+                {srTitle && <span className="sr-only">{srTitle}. </span>}
                 <motion.span
                   className="block font-heading text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-bold italic leading-[0.95] tracking-tight text-white transition-none"
                   style={{ transform: `translateX(-${textTranslateX}vw)` }}
                 >
                   {firstWord}
                 </motion.span>
+                {/* Без пробела блочные span склеиваются в тексте заголовка: «правобыть» */}{" "}
                 <motion.span
                   className="block font-heading text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-bold italic leading-[0.95] tracking-tight text-center text-white transition-none"
                   style={{ transform: `translateX(${textTranslateX}vw)` }}

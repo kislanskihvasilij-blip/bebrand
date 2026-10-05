@@ -18,6 +18,7 @@ export function SiteHeader() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const menuButtonRef = useRef<HTMLButtonElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
   const { setLock } = useScrollLock();
   const { scrollY } = useScroll();
 
@@ -42,15 +43,33 @@ export function SiteHeader() {
 
   useEffect(() => {
     setLock(MENU_LOCK_ID, isMenuOpen);
+    // Пока меню открыто, страница за оверлеем недоступна для Tab и скринридеров
+    const background = [document.getElementById("main-content"), document.querySelector("footer")];
+    background.forEach((element) => element?.toggleAttribute("inert", isMenuOpen));
     if (!isMenuOpen) return;
+    menuRef.current?.querySelector<HTMLElement>("a")?.focus();
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key !== "Escape") return;
       setIsMenuOpen(false);
       menuButtonRef.current?.focus();
     };
     window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+      setLock(MENU_LOCK_ID, false);
+      background.forEach((element) => element?.removeAttribute("inert"));
+    };
   }, [isMenuOpen, setLock]);
+
+  // Повернули планшет и вышли на десктопную ширину — бургер скрыт, меню нужно закрыть, иначе скролл застынет
+  useEffect(() => {
+    const desktopQuery = window.matchMedia("(min-width: 1280px)");
+    const handleChange = (event: MediaQueryListEvent) => {
+      if (event.matches) setIsMenuOpen(false);
+    };
+    desktopQuery.addEventListener("change", handleChange);
+    return () => desktopQuery.removeEventListener("change", handleChange);
+  }, []);
 
   const closeMenu = () => setIsMenuOpen(false);
   const handleAnchorClick = useAnchorNavigation(closeMenu);
@@ -58,8 +77,10 @@ export function SiteHeader() {
 
   return (
     <header
+      data-focus-theme={isDark ? "dark" : "light"}
       className={cn(
         "fixed inset-x-0 top-0 z-50 transition-[background-color,border-color,backdrop-filter] duration-300",
+        isMenuOpen && "bg-night",
         isScrolled && !isMenuOpen && "backdrop-blur-md",
         isScrolled && !isMenuOpen && (isDark ? "bg-night/70" : "border-b border-ink/10 bg-white/85"),
       )}
@@ -73,12 +94,17 @@ export function SiteHeader() {
       </a>
 
       <div className="container-brand flex h-[72px] items-center justify-between gap-6">
-        <a href="#top" onClick={handleAnchorClick} className="flex items-center gap-4" aria-label="BEBRAND — в начало страницы">
+        <a
+          href="#top"
+          onClick={handleAnchorClick}
+          className="flex items-center gap-4"
+          aria-label={`BEBRAND. ${site.header.roleLine1}, ${site.header.roleLine2} — в начало страницы`}
+        >
           <Logo variant={isDark ? "inverse" : "color"} className="h-8 md:h-9" />
           <span
             className={cn(
               "hidden border-l pl-4 text-[0.68rem] font-medium uppercase leading-snug tracking-[0.16em] sm:block",
-              isDark ? "border-white/25 text-white/75" : "border-ink/15 text-brand-graphite",
+              isDark ? "border-white/25 text-white/90" : "border-ink/15 text-brand-graphite",
             )}
           >
             {site.header.roleLine1}
@@ -115,8 +141,8 @@ export function SiteHeader() {
           type="button"
           onClick={() => setIsMenuOpen((open) => !open)}
           aria-expanded={isMenuOpen}
-          aria-controls="mobile-menu"
-          aria-label={isMenuOpen ? "Закрыть меню" : "Открыть меню"}
+          aria-controls={isMenuOpen ? "mobile-menu" : undefined}
+          aria-label="Меню"
           className="relative flex size-11 items-center justify-center xl:hidden"
         >
           {[-1, 0, 1].map((position) => (
@@ -138,9 +164,12 @@ export function SiteHeader() {
 
       <AnimatePresence>
         {isMenuOpen && (
+          // data-lenis-prevent: остановленный Lenis глушит колесо и тач — без него меню не прокрутить
           <motion.div
+            ref={menuRef}
             id="mobile-menu"
-            className="fixed inset-0 top-[72px] z-40 flex flex-col justify-between overflow-y-auto bg-night/90 px-(--gutter) pb-10 pt-8 backdrop-blur-[15px] xl:hidden"
+            data-lenis-prevent
+            className="fixed inset-0 top-[72px] z-40 flex flex-col justify-between overflow-y-auto overscroll-contain bg-night/90 px-(--gutter) pb-10 pt-8 backdrop-blur-[15px] xl:hidden"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}

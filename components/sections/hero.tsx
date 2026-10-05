@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback } from "react";
+import { useCallback, useEffect } from "react";
 import ScrollExpandMedia from "@/components/ui/scroll-expansion-hero";
 import { Logo } from "@/components/brand/logo";
 import { BrandChevron } from "@/components/brand/marks";
@@ -16,6 +16,8 @@ export function Hero() {
     (isExpanded: boolean) => setLock(HERO_LOCK_ID, !isExpanded),
     [setLock],
   );
+  // Блокировка не должна пережить сам блок
+  useEffect(() => () => setLock(HERO_LOCK_ID, false), [setLock]);
   const { hero } = site;
 
   return (
@@ -26,6 +28,7 @@ export function Hero() {
         mediaAlt={hero.mediaAlt}
         bgImageSrc={hero.background}
         title={hero.title}
+        srTitle={hero.seoTitle}
         date={hero.date}
         scrollToExpand={hero.scrollHint}
         mediaPosition="50% 28%"

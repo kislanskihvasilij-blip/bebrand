@@ -28,7 +28,7 @@ type ScrollLockApi = {
 
 const ScrollLockContext = createContext<ScrollLockApi | null>(null);
 
-// Отступ под фиксированную шапку задаёт scroll-margin-top секций (scroll-mt-20) — Lenis его учитывает сам
+// Отступ под фиксированную шапку задаёт scroll-padding-top у html (globals.css) — Lenis его учитывает сам
 const MAX_WAIT_FRAMES = 30;
 
 function ScrollLockProvider({ children }: { children: ReactNode }) {
@@ -66,6 +66,8 @@ function ScrollLockProvider({ children }: { children: ReactNode }) {
         }
         if (lenis && !isStopped) lenis.scrollTo(target);
         else target.scrollIntoView({ block: "start" });
+        // Секция не фокусируема сама по себе — без tabindex фокус остался бы на ссылке меню
+        if (!target.hasAttribute("tabindex")) target.setAttribute("tabindex", "-1");
         target.focus({ preventScroll: true });
       };
       requestAnimationFrame(attempt);
@@ -98,12 +100,14 @@ export function useScrollLock(): ScrollLockApi {
 export function useAnchorNavigation(onNavigate?: () => void) {
   const { scrollToAnchor } = useScrollLock();
   return (event: MouseEvent<HTMLAnchorElement>) => {
+    // Ctrl/Cmd/Shift-клик — «открыть в новой вкладке/окне»: решение пользователя, не перехватываем
+    if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
     const hash = event.currentTarget.hash;
     if (!hash) return;
     event.preventDefault();
     onNavigate?.();
     window.dispatchEvent(new Event(HERO_EXPAND_EVENT));
-    window.history.pushState(null, "", hash);
+    if (window.location.hash !== hash) window.history.pushState(null, "", hash);
     scrollToAnchor(hash);
   };
 }

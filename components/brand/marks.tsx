@@ -17,34 +17,41 @@ export function BrandChevron({ className }: { className?: string }) {
 
 type SectionLabelTone = "light" | "dark" | "red";
 
-const LABEL_TONES: Record<SectionLabelTone, { text: string; accent: string }> = {
-  light: { text: "text-brand-graphite", accent: "text-brand-red" },
-  dark: { text: "text-white/70", accent: "text-brand-red" },
-  red: { text: "text-white/80", accent: "text-white" },
+// Номер на тёмном — белый: красный #AE1613 на #111 даёт лишь 2.6:1. «Галочка» декоративна и остаётся красной.
+const LABEL_TONES: Record<SectionLabelTone, { text: string; chevron: string; index: string }> = {
+  light: { text: "text-brand-graphite", chevron: "text-brand-red", index: "text-brand-red" },
+  dark: { text: "text-white/70", chevron: "text-brand-red", index: "text-white" },
+  red: { text: "text-white/90", chevron: "text-white", index: "text-white" },
 };
 
 type SectionLabelProps = {
   index: string;
   children: ReactNode;
   tone?: SectionLabelTone;
+  /** h2 — когда надзаголовок и есть заголовок секции */
+  as?: "p" | "h2";
+  id?: string;
   className?: string;
 };
 
 /** Надзаголовок секции в духе нумерации гайда: «1.1 ЛОГОТИП» */
-export function SectionLabel({ index, children, tone = "light", className }: SectionLabelProps) {
+export function SectionLabel({ index, children, tone = "light", as: Tag = "p", id, className }: SectionLabelProps) {
   const colors = LABEL_TONES[tone];
   return (
-    <p
+    <Tag
+      id={id}
       className={cn(
         "flex items-center gap-3 text-[0.7rem] font-semibold uppercase tracking-[0.22em] md:text-xs",
         colors.text,
         className,
       )}
     >
-      <BrandChevron className={cn("h-3", colors.accent)} />
-      <span className={cn("font-condensed text-sm tabular-nums", colors.accent)}>{index}</span>
+      <BrandChevron className={cn("h-3", colors.chevron)} />
+      <span aria-hidden="true" className={cn("font-condensed text-sm tabular-nums", colors.index)}>
+        {index}
+      </span>
       <span aria-hidden="true" className="h-px w-8 bg-current opacity-40" />
       <span>{children}</span>
-    </p>
+    </Tag>
   );
 }

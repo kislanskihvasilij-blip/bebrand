@@ -6,8 +6,10 @@ import { site } from "@/content/site";
 /** Красная лента с городами ЮФО — бегущая строка 75 px/с, как на auros.global */
 export function RegionsBand() {
   return (
-    <section aria-label="Где я работаю" data-header-theme="dark" className="bg-pattern-red py-6 text-white md:py-8">
-      <h2 className="sr-only">Краснодар и весь Южный федеральный округ</h2>
+    <section aria-labelledby="regions-title" data-header-theme="dark" className="relative bg-pattern-red py-6 text-white md:py-8">
+      <h2 id="regions-title" className="sr-only">
+        Работаю в Краснодаре и по всему Южному федеральному округу
+      </h2>
       <Marquee
         items={site.regions.map((city) => (
           <span key={city} className="flex items-center gap-12 font-heading text-3xl font-bold italic md:text-5xl">
@@ -28,7 +30,7 @@ export function About() {
       id="about"
       aria-labelledby="about-title"
       data-header-theme="light"
-      className="relative scroll-mt-20 overflow-hidden bg-white py-(--section-space)"
+      className="relative overflow-clip bg-white py-(--section-space)"
     >
       <div
         aria-hidden="true"

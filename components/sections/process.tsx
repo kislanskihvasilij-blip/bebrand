@@ -9,7 +9,7 @@ export function Process() {
       id="process"
       aria-labelledby="process-title"
       data-header-theme="light"
-      className="scroll-mt-20 bg-white py-(--section-space)"
+      className="bg-white py-(--section-space)"
     >
       <div className="container-brand grid gap-14 lg:grid-cols-12 lg:gap-10">
         <div className="lg:col-span-5">
@@ -31,7 +31,10 @@ export function Process() {
           <ScrollProgressLine className="bottom-3 left-[1.375rem] top-3 md:left-[1.875rem]" />
           {process.steps.map((step, index) => (
             <li key={step.title} className="relative grid grid-cols-[auto_1fr] gap-6 pb-14 last:pb-0 md:gap-10">
-              <span className="relative z-10 flex size-11 items-center justify-center bg-white font-condensed text-lg font-bold tabular-nums text-brand-red ring-1 ring-ink/15 md:size-15 md:text-2xl">
+              <span
+                aria-hidden="true"
+                className="relative z-10 flex size-11 items-center justify-center bg-white font-condensed text-lg font-bold tabular-nums text-brand-red ring-1 ring-ink/15 md:size-15 md:text-2xl"
+              >
                 {String(index + 1).padStart(2, "0")}
               </span>
               <Reveal className="pt-1 md:pt-2">

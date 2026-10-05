@@ -24,20 +24,11 @@
   --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
 
   --animate-marquee: marquee var(--marquee-duration, 40s) linear infinite;
-  --animate-orbit: orbit var(--orbit-duration, 60s) linear infinite;
   --animate-ambient-in: ambient-in 3s cubic-bezier(0.645, 0.045, 0.355, 1) both;
 
   @keyframes marquee {
     to {
       transform: translateX(calc(-50% - 0.5 * var(--marquee-gap, 3rem)));
-    }
-  }
-  @keyframes orbit {
-    from {
-      transform: rotate(0turn) translateX(var(--orbit-radius, 20vmin)) rotate(0turn);
-    }
-    to {
-      transform: rotate(1turn) translateX(var(--orbit-radius, 20vmin)) rotate(-1turn);
     }
   }
   @keyframes ambient-in {
@@ -225,6 +216,8 @@ html.lenis.lenis-stopped:not(.lenis-autoToggle) {
     -webkit-text-size-adjust: 100%;
     text-rendering: optimizeLegibility;
     scrollbar-gutter: stable;
+    /* Отступ под фиксированную шапку: и для фокуса с клавиатуры, и для Lenis при переходе по якорю */
+    scroll-padding-top: 5rem;
   }
   body {
     @apply bg-background text-foreground antialiased;
@@ -236,6 +229,15 @@ html.lenis.lenis-stopped:not(.lenis-autoToggle) {
   :focus-visible {
     outline: 2px solid var(--color-brand-red);
     outline-offset: 3px;
+  }
+  /* Красная обводка не видна на красном и тёмном — там она белая */
+  [data-header-theme="dark"] :focus-visible,
+  [data-focus-theme="dark"] :focus-visible {
+    outline-color: #fff;
+  }
+  /* Секции получают фокус программно после перехода по якорю — рамка вокруг них не нужна */
+  [tabindex="-1"]:focus {
+    outline: none;
   }
 }
 

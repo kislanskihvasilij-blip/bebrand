@@ -2,10 +2,8 @@
 
 import { useState } from "react";
 import Image from "next/image";
-import { AnimatePresence, motion } from "framer-motion";
 import { ArrowUpRight } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { EASE } from "@/lib/motion";
 
 export type StickyMediaItem = {
   id: string;
@@ -20,32 +18,32 @@ type StickyMediaListProps = { items: readonly StickyMediaItem[]; className?: str
 
 /**
  * Список услуг + «прилипшее» изображение, которое меняется при наведении на строку.
- * Тайминги — из раздела Explore на auros.global: кроссфейд 130 мс, подсветка строки 200 мс.
+ * Тайминги — из раздела Explore на auros.global: смена картинки 130 мс, подсветка строки 200 мс.
+ * Картинки лежат стопкой и проявляются через opacity — настоящий кроссфейд без пустого кадра.
  */
 export function StickyMediaList({ items, className }: StickyMediaListProps) {
   const [activeId, setActiveId] = useState(items[0]?.id);
-  const active = items.find((item) => item.id === activeId) ?? items[0];
-  if (!active) return null;
+  if (items.length === 0) return null;
+  const activeKey = items.some((item) => item.id === activeId) ? activeId : items[0].id;
 
   return (
     <div className={cn("grid gap-12 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)] lg:gap-16", className)}>
       <ol className="border-b border-ink/15">
         {items.map((item, index) => {
-          const isActive = item.id === active.id;
+          const isActive = item.id === activeKey;
           return (
             <li
               key={item.id}
               onPointerEnter={() => setActiveId(item.id)}
-              onFocusCapture={() => setActiveId(item.id)}
               data-active={isActive}
               className="group relative border-t border-ink/15 transition-colors duration-200 hover:border-transparent [li:hover+&]:border-transparent"
             >
               <span
                 aria-hidden="true"
-                className="pointer-events-none absolute inset-0 bg-grad-mist opacity-0 transition-opacity duration-200 ease-in-out group-hover:opacity-100 group-data-[active=true]:opacity-60"
+                className="pointer-events-none absolute inset-0 bg-brand-mist opacity-0 transition-opacity duration-200 ease-in-out group-hover:opacity-100 group-data-[active=true]:opacity-70"
               />
               <div className="relative grid grid-cols-[auto_1fr] gap-x-5 gap-y-3 px-1 py-7 sm:px-4 md:gap-x-8">
-                <span className="pt-1.5 font-condensed text-sm font-semibold tabular-nums text-brand-red">
+                <span aria-hidden="true" className="pt-1.5 font-condensed text-sm font-semibold tabular-nums text-brand-red">
                   {String(index + 1).padStart(2, "0")}
                 </span>
                 <div>
@@ -70,24 +68,23 @@ export function StickyMediaList({ items, className }: StickyMediaListProps) {
         })}
       </ol>
 
-      <div className="hidden lg:block">
+      {/* Десктопная картинка декоративна: клавиатурой её не переключить, подписи есть у мобильных версий */}
+      <div aria-hidden="true" className="hidden lg:block">
         <div className="sticky top-[150px] aspect-[4/3.4] overflow-hidden bg-brand-mist">
-          <AnimatePresence mode="wait" initial={false}>
-            <motion.div
-              key={active.id}
-              className="absolute inset-0"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.13, ease: EASE.quadOut }}
-            >
-              <Image src={active.image} alt={active.alt} fill sizes="45vw" className="object-cover" />
-            </motion.div>
-          </AnimatePresence>
-          <span
-            aria-hidden="true"
-            className="absolute -bottom-px left-0 h-16 w-28 bg-brand-red clip-chevron"
-          />
+          {items.map((item) => (
+            <Image
+              key={item.id}
+              src={item.image}
+              alt=""
+              fill
+              sizes="45vw"
+              className={cn(
+                "object-cover transition-opacity duration-[130ms] ease-out",
+                item.id === activeKey ? "opacity-100" : "opacity-0",
+              )}
+            />
+          ))}
+          <span className="absolute -bottom-px left-0 h-16 w-28 bg-brand-red clip-chevron" />
         </div>
       </div>
     </div>
