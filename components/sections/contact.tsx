@@ -85,7 +85,8 @@ export function Contact() {
   );
 }
 
-export function SiteFooter() {
+/** Год считает серверный page.tsx: клиентский new Date() в рендере расходится с пререндером при смене года */
+export function SiteFooter({ year }: { year: number }) {
   const { footer, contact, nav, person } = site;
   const handleAnchorClick = useAnchorNavigation();
   const telegram = contact.channels[0];
@@ -126,7 +127,7 @@ export function SiteFooter() {
 
       <div className="border-t border-white/10">
         <div className="container-brand flex flex-col gap-3 py-6 text-xs text-white/50 md:flex-row md:items-center md:justify-between">
-          <p>© {new Date().getFullYear()} {person.name}</p>
+          <p>© {year} {person.name}</p>
           <p className="max-w-2xl md:text-right">{footer.note}</p>
         </div>
       </div>

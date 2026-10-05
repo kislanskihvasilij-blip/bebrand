@@ -48,7 +48,7 @@ export default function Home() {
         <Faq />
         <Contact />
       </main>
-      <SiteFooter />
+      <SiteFooter year={new Date().getFullYear()} />
     </>
   );
 }

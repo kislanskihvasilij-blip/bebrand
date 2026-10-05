@@ -7,9 +7,9 @@ import "./globals.css";
 
 // Фирменные шрифты (п. 1.9 гайда): Roboto — для текста, Bitter — для заголовков и важных сообщений.
 // Ось ширины Roboto даёт «Roboto Condensed» для крупных цифр — как нумерация страниц в гайде.
+// Курсив на сайте только у Bitter, поэтому Roboto грузим без italic: −100 КБ предзагрузки.
 const roboto = Roboto({
   subsets: ["latin", "cyrillic"],
-  style: ["normal", "italic"],
   axes: ["wdth"],
   variable: "--font-roboto",
   display: "swap",
