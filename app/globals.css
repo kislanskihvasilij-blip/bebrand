@@ -1,0 +1,251 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+@import "lenis/dist/lenis.css";
+
+@custom-variant dark (&:is(.dark *));
+
+/* ───────────────────────── Фирменная палитра BEBRAND ─────────────────────────
+   «Руководство по использованию фирменного стиля», п. 1.6 «Фирменные цвета».
+   Основная гамма: 1 и 4. Дополнительная: 2, 3, 5, 6.                          */
+@theme {
+  --color-brand-red: #ae1613; /* 1 · CMYK 15 100 100 20 · Pantone 1805 C */
+  --color-brand-crimson: #90160f; /* 2 · CMYK 20 100 100 35 · Pantone 7622 C */
+  --color-brand-maroon: #6c1103; /* 3 · CMYK 20 100 100 58 · Pantone 1815 C */
+  --color-brand-graphite: #575756; /* 4 · CMYK 0 0 0 80 · Pantone 425 C */
+  --color-brand-steel: #bac8d0; /* 5 · CMYK 14 0 0 24 · Pantone 5455 C */
+  --color-brand-mist: #ececec; /* 6 · CMYK 0 0 0 10 · Cool Gray 1 C */
+  --color-ink: #1b1b1a;
+  --color-night: #111111;
+
+  /* Кривые движения: «signature» — из аккордеона auros.global */
+  --ease-signature: cubic-bezier(0.625, 0.05, 0, 1);
+  --ease-brand: cubic-bezier(0.76, 0, 0.24, 1);
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+
+  --animate-marquee: marquee var(--marquee-duration, 40s) linear infinite;
+  --animate-orbit: orbit var(--orbit-duration, 60s) linear infinite;
+  --animate-ambient-in: ambient-in 3s cubic-bezier(0.645, 0.045, 0.355, 1) both;
+
+  @keyframes marquee {
+    to {
+      transform: translateX(calc(-50% - 0.5 * var(--marquee-gap, 3rem)));
+    }
+  }
+  @keyframes orbit {
+    from {
+      transform: rotate(0turn) translateX(var(--orbit-radius, 20vmin)) rotate(0turn);
+    }
+    to {
+      transform: rotate(1turn) translateX(var(--orbit-radius, 20vmin)) rotate(-1turn);
+    }
+  }
+  @keyframes ambient-in {
+    from {
+      opacity: 0;
+    }
+  }
+}
+
+@theme inline {
+  --font-sans: var(--font-roboto), ui-sans-serif, system-ui, sans-serif;
+  --font-heading: var(--font-bitter), ui-serif, Georgia, serif;
+  --font-serif: var(--font-bitter), ui-serif, Georgia, serif;
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+}
+
+/* Строгий, «огранённый» характер стиля — острые углы вместо скруглений */
+:root {
+  --background: #ffffff;
+  --foreground: var(--color-ink);
+  --card: #ffffff;
+  --card-foreground: var(--color-ink);
+  --popover: #ffffff;
+  --popover-foreground: var(--color-ink);
+  --primary: var(--color-brand-red);
+  --primary-foreground: #ffffff;
+  --secondary: var(--color-brand-mist);
+  --secondary-foreground: var(--color-ink);
+  --muted: var(--color-brand-mist);
+  --muted-foreground: var(--color-brand-graphite);
+  --accent: var(--color-brand-mist);
+  --accent-foreground: var(--color-ink);
+  --destructive: var(--color-brand-crimson);
+  --border: #dcdcdc;
+  --input: #cfcfcf;
+  --ring: var(--color-brand-red);
+  --radius: 0.125rem;
+
+  --gutter: clamp(1rem, 0.5rem + 2.5vw, 3rem);
+  --section-space: clamp(5rem, 3rem + 8vw, 11rem);
+}
+
+/* Фирменные градиенты (п. 1.7): 1→2, 1→3, 2→3, 6→4, 5→4, 6→5 */
+@utility bg-grad-red {
+  background-image: linear-gradient(100deg, var(--color-brand-red), var(--color-brand-maroon));
+}
+@utility bg-grad-steel {
+  background-image: linear-gradient(100deg, var(--color-brand-steel), var(--color-brand-graphite));
+}
+@utility bg-grad-mist {
+  background-image: linear-gradient(100deg, var(--color-brand-mist), var(--color-brand-steel));
+}
+
+/* Полигональный паттерн «огранка алмаза» (п. 1.12) */
+@utility bg-pattern-light {
+  background: url("/brand/pattern-light.webp") center / cover no-repeat;
+}
+@utility bg-pattern-red {
+  background: url("/brand/pattern-red.webp") center / cover no-repeat;
+}
+
+/* Асимметричная «галочка» (п. 1.10): вершина на 38.89 % ширины, плечи под одним углом */
+@utility clip-chevron {
+  clip-path: polygon(100% 0, 38.89% 38.46%, 0 13.98%, 0 75.52%, 38.89% 100%, 100% 61.54%);
+}
+/* Верхняя кромка секции — белая «галочка» врезается сверху, как на визитке */
+@utility clip-chevron-top {
+  clip-path: polygon(
+    0 0,
+    0 calc(var(--notch, 6vw) * 0.364),
+    38.89% var(--notch, 6vw),
+    100% 0,
+    100% 100%,
+    0 100%
+  );
+}
+/* Нижняя кромка секции — «галочкой» вниз, как на сити-форматах */
+@utility clip-chevron-bottom {
+  clip-path: polygon(
+    0 0,
+    100% 0,
+    100% calc(100% - var(--notch, 6vw)),
+    38.89% 100%,
+    0 calc(100% - var(--notch, 6vw) * 0.636)
+  );
+}
+
+@utility font-condensed {
+  font-stretch: 75%;
+  font-variation-settings: "wdth" 75;
+}
+
+@utility container-brand {
+  width: 100%;
+  max-width: 88rem;
+  margin-inline: auto;
+  padding-inline: var(--gutter);
+}
+
+/* Ссылка с «протягиванием» линии слева направо */
+@utility link-underline {
+  background-image: linear-gradient(currentColor, currentColor);
+  background-size: 0% 1px;
+  background-position: 100% 100%;
+  background-repeat: no-repeat;
+  transition: background-size 0.6s var(--ease-signature);
+  &:hover,
+  &:focus-visible {
+    background-size: 100% 1px;
+    background-position: 0% 100%;
+  }
+}
+
+/* Кнопка с «переливом» градиента — приём auros.global в фирменных красных */
+@utility btn-sweep {
+  background-image: linear-gradient(
+    90deg,
+    var(--color-brand-maroon),
+    var(--color-brand-red),
+    var(--color-brand-crimson),
+    var(--color-brand-red)
+  );
+  background-size: 280% 100%;
+  background-position: 100% 0;
+  transition:
+    background-position 600ms ease,
+    color 200ms ease,
+    transform 200ms ease;
+  &:hover,
+  &:focus-visible {
+    background-position: 0% 0;
+  }
+}
+
+/* Лёгкое зерно поверх тёмных секций — глубина без шума */
+@utility grain {
+  position: relative;
+  isolation: isolate;
+  &::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    opacity: 0.07;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+}
+
+/* Lenis останавливается, пока hero не раскрыт. Его `overflow: clip` прячет полосу
+   прокрутки и сдвигает вёрстку — `hidden` + зарезервированный жёлоб сдвига не даёт. */
+html.lenis.lenis-stopped:not(.lenis-autoToggle) {
+  overflow: hidden;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  html {
+    @apply font-sans;
+    -webkit-text-size-adjust: 100%;
+    text-rendering: optimizeLegibility;
+    scrollbar-gutter: stable;
+  }
+  body {
+    @apply bg-background text-foreground antialiased;
+  }
+  ::selection {
+    background: var(--color-brand-red);
+    color: #fff;
+  }
+  :focus-visible {
+    outline: 2px solid var(--color-brand-red);
+    outline-offset: 3px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
