@@ -95,6 +95,16 @@ export function SiteFooter({ year }: { year: number }) {
           <Logo variant="inverse" className="h-12" />
           <p className="mt-6 max-w-sm text-sm leading-relaxed">{footer.tagline}</p>
           <p className="mt-2 max-w-sm text-sm leading-relaxed text-white/50">{footer.headOffice}</p>
+          <a
+            href={contact.website.href}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="link-underline mt-5 inline-flex items-center gap-1.5 text-sm font-medium text-white"
+          >
+            {contact.website.label}: {contact.website.value}
+            <ArrowUpRight aria-hidden="true" className="size-4" />
+            <span className="sr-only"> {NEW_TAB_HINT}</span>
+          </a>
         </div>
 
         <FooterNav items={nav} />

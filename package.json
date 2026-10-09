@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "build:static": "next build && node -e \"require('node:fs').copyFileSync('config/apache.htaccess', 'out/.htaccess')\"",
     "start": "next start",
     "lint": "eslint"
   },

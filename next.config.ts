@@ -30,11 +30,18 @@ const securityHeaders = [
   { key: "Strict-Transport-Security", value: "max-age=63072000; includeSubDomains" },
 ];
 
-const nextConfig: NextConfig = {
-  poweredByHeader: false,
-  async headers() {
-    return [{ source: "/:path*", headers: securityHeaders }];
-  },
-};
+// `npm run build:static` собирает обычные статические файлы в out/ — их можно залить на любой хостинг,
+// в том числе российский (адреса *.vercel.app блокируются частью провайдеров). В статике нет серверных
+// заголовков — их задаёт config/apache.htaccess, — а картинки отдаются как есть: они уже сжаты в WebP.
+const isStaticExport = process.env.npm_lifecycle_event === "build:static";
+
+const nextConfig: NextConfig = isStaticExport
+  ? { poweredByHeader: false, output: "export", images: { unoptimized: true } }
+  : {
+      poweredByHeader: false,
+      async headers() {
+        return [{ source: "/:path*", headers: securityHeaders }];
+      },
+    };
 
 export default nextConfig;
